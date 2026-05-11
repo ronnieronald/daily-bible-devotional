@@ -37,17 +37,56 @@ async function getData() {
   });
 }
 
-/* ================== PARSER ================== */
+/* ================== PARSER (MEJORADO) ================== */
 function parseTexto(texto) {
-  const match = texto.match(/^(.+)\s(\d+)\.(\d+)-(\d+)$/);
-  if (!match) return null;
 
-  return {
-    libro: match[1].toLowerCase(),
-    capitulo: match[2],
-    inicio: parseInt(match[3]),
-    fin: parseInt(match[4])
-  };
+  // Hechos 21.37-22.5 (multi capítulo)
+  let match = texto.match(/^(.+)\s(\d+)\.(\d+)-(\d+)\.(\d+)$/);
+  if (match) {
+    return {
+      libro: match[1].toLowerCase(),
+      capInicio: parseInt(match[2]),
+      versInicio: parseInt(match[3]),
+      capFin: parseInt(match[4]),
+      versFin: parseInt(match[5]),
+      type: "range_multi"
+    };
+  }
+
+  // Hechos 21.37-50 (mismo capítulo)
+  match = texto.match(/^(.+)\s(\d+)\.(\d+)-(\d+)$/);
+  if (match) {
+    return {
+      libro: match[1].toLowerCase(),
+      capitulo: parseInt(match[2]),
+      inicio: parseInt(match[3]),
+      fin: parseInt(match[4]),
+      type: "range_single"
+    };
+  }
+
+  // Hechos 21 (capítulo completo)
+  match = texto.match(/^(.+)\s(\d+)$/);
+  if (match) {
+    return {
+      libro: match[1].toLowerCase(),
+      capitulo: parseInt(match[2]),
+      type: "chapter"
+    };
+  }
+
+  // Juan 3.16 (versículo único)
+  match = texto.match(/^(.+)\s(\d+)\.(\d+)$/);
+  if (match) {
+    return {
+      libro: match[1].toLowerCase(),
+      capitulo: parseInt(match[2]),
+      versiculo: parseInt(match[3]),
+      type: "single"
+    };
+  }
+
+  return null;
 }
 
 /* ================== LIBROS ================== */
@@ -120,7 +159,7 @@ async function cargarDevocional() {
     }
 
     const bible = await getBiblia(libroReal);
-    const cap = bible.chapters[parsed.capitulo];
+    const cap = bible.chapters;
 
     let textoFinal = "";
 
@@ -128,24 +167,90 @@ async function cargarDevocional() {
       <div>📅 ${item.dia}</div>
       <div>📚 ${item.tema}</div>
       <div>📄 ${item.texto}</div>
-
       <hr>
     `;
 
-    for (let i = parsed.inicio; i <= parsed.fin; i++) {
-      if (cap[i]) {
-        const v = cap[i];
+    /* ================= MULTI CAPÍTULO ================= */
+    if (parsed.type === "range_multi") {
 
-        html += `
-          <div class="verse">
-            <b>${i}</b> ${v}
-          </div>
-        `;
+      for (let c = parsed.capInicio; c <= parsed.capFin; c++) {
 
-        textoFinal += `${i}. ${v}\n`;
+        const chapter = cap[c];
+        if (!chapter) continue;
+
+        let vStart = (c === parsed.capInicio) ? parsed.versInicio : 1;
+        let vEnd = (c === parsed.capFin) ? parsed.versFin : chapter.length - 1;
+
+        for (let i = vStart; i <= vEnd; i++) {
+          if (chapter[i]) {
+
+            html += `
+              <div class="verse">
+                <b>${c}:${i}</b> ${chapter[i]}
+              </div>
+            `;
+
+            textoFinal += `${c}:${i}. ${chapter[i]}\n`;
+          }
+        }
       }
     }
 
+    /* ================= MISMO CAPÍTULO ================= */
+    else if (parsed.type === "range_single") {
+
+      const chapter = cap[parsed.capitulo];
+
+      for (let i = parsed.inicio; i <= parsed.fin; i++) {
+        if (chapter[i]) {
+
+          html += `
+            <div class="verse">
+              <b>${parsed.capitulo}:${i}</b> ${chapter[i]}
+            </div>
+          `;
+
+          textoFinal += `${parsed.capitulo}:${i}. ${chapter[i]}\n`;
+        }
+      }
+    }
+
+    /* ================= CAPÍTULO COMPLETO ================= */
+    else if (parsed.type === "chapter") {
+
+      const chapter = cap[parsed.capitulo];
+
+      chapter.forEach((v, i) => {
+        if (i === 0) return;
+
+        html += `
+          <div class="verse">
+            <b>${parsed.capitulo}:${i}</b> ${v}
+          </div>
+        `;
+
+        textoFinal += `${parsed.capitulo}:${i}. ${v}\n`;
+      });
+    }
+
+    /* ================= VERSÍCULO ÚNICO ================= */
+    else if (parsed.type === "single") {
+
+      const v = cap[parsed.capitulo]?.[parsed.versiculo];
+
+      if (v) {
+
+        html += `
+          <div class="verse">
+            <b>${parsed.capitulo}:${parsed.versiculo}</b> ${v}
+          </div>
+        `;
+
+        textoFinal += `${parsed.capitulo}:${parsed.versiculo}. ${v}\n`;
+      }
+    }
+
+    /* ================= BOTÓN ================= */
     html += `
       <button onclick="compartirWhatsApp(\`${item.texto}\n${textoFinal}\`)">
         📤 Compartir WhatsApp
