@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Biblia Devocional</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      background: #111;
+      color: white;
+      margin: 0;
+    }
+
+    .box {
+      margin-top: 20px;
+      padding: 15px;
+      background: #222;
+      border-radius: 10px;
+      min-height: 80px;
+    }
+
+    .verse {
+      margin: 8px 0;
+      padding: 10px;
+      background: #333;
+      border-radius: 6px;
+    }
+
+    button {
+      padding: 10px;
+      margin-top: 10px;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      background: #00ff99;
+      color: #000;
+      font-weight: bold;
+    }
+
+    /* ================= PRELOADER ================= */
+    #preloader {
+      position: fixed;
+      inset: 0;
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      color: white;
+    }
+
+    .loader {
+      width: 55px;
+      height: 55px;
+      border: 5px solid #333;
+      border-top: 5px solid #00ff99;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .loader {
+        width: 40px;
+        height: 40px;
+      }
+
+      #preloader p {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- PRELOADER -->
+  <div id="preloader">
+    <div class="loader"></div>
+    <p>Cargando devocional...</p>
+  </div>
+
+  <div id="result" class="box"></div>
+
+  <script src="app.js"></script>
+
+</body>
+</html>
