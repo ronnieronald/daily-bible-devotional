@@ -1,98 +1,617 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Biblia Devocional</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      font-family: Arial;
-      padding: 20px;
-      background: #111;
-      color: white;
-      margin: 0;
-    }
+<title>Biblia Devocional</title>
 
-    .box {
-      margin-top: 20px;
-      padding: 15px;
-      background: #222;
-      border-radius: 10px;
-      min-height: 80px;
-    }
+<style>
 
-    .verse {
-      margin: 8px 0;
-      padding: 10px;
-      background: #333;
-      border-radius: 6px;
-    }
+*{
+  box-sizing:border-box;
+}
 
-    button {
-      padding: 10px;
-      margin-top: 10px;
-      cursor: pointer;
-      border: none;
-      border-radius: 6px;
-      background: #00ff99;
-      color: #000;
-      font-weight: bold;
-    }
+body{
+  font-family:Arial,sans-serif;
+  padding:20px;
+  background:#0f172a;
+  color:white;
+  margin:0;
+}
 
-    /* ================= PRELOADER ================= */
-    #preloader {
-      position: fixed;
-      inset: 0;
-      background: #111;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      color: white;
-    }
+/* ================= CONTENEDOR ================= */
 
-    .loader {
-      width: 55px;
-      height: 55px;
-      border: 5px solid #333;
-      border-top: 5px solid #00ff99;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 15px;
-    }
+.box{
+  margin-top:20px;
+  padding:18px;
+  background:#1e293b;
+  border-radius:14px;
+  min-height:120px;
+  box-shadow:0 0 15px rgba(0,0,0,.3);
+}
 
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
+/* ================= VERSOS ================= */
 
-    /* Responsive */
-    @media (max-width: 600px) {
-      .loader {
-        width: 40px;
-        height: 40px;
-      }
+.verse{
+  margin:10px 0;
+  padding:14px;
+  background:#334155;
+  border-radius:10px;
+  line-height:1.7;
+  border-left:4px solid #00ff99;
+}
 
-      #preloader p {
-        font-size: 14px;
-      }
-    }
-  </style>
+/* ================= BOTON ================= */
+
+button{
+  padding:12px 18px;
+  margin-top:15px;
+  cursor:pointer;
+  border:none;
+  border-radius:10px;
+  background:#00ff99;
+  color:#000;
+  font-weight:bold;
+  width:100%;
+  font-size:15px;
+}
+
+/* ================= PRELOADER ================= */
+
+#preloader{
+  position:fixed;
+  inset:0;
+  background:#0f172a;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  z-index:9999;
+}
+
+.loader{
+  width:55px;
+  height:55px;
+  border:5px solid #1e293b;
+  border-top:5px solid #00ff99;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  margin-bottom:15px;
+}
+
+@keyframes spin{
+  to{
+    transform:rotate(360deg);
+  }
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media(max-width:600px){
+
+  body{
+    padding:15px;
+  }
+
+  .verse{
+    font-size:14px;
+    padding:12px;
+  }
+
+  .loader{
+    width:42px;
+    height:42px;
+  }
+
+}
+
+</style>
 </head>
 
 <body>
-  <!-- PRELOADER -->
-  <div id="preloader">
-    <div class="loader"></div>
-    <p>Cargando Biblia...</p>
-  </div>
 
-  <div id="result" class="box"></div>
+<!-- PRELOADER -->
+<div id="preloader">
+  <div class="loader"></div>
+  <p>Cargando Biblia...</p>
+</div>
 
-  <script src="app.js"></script>
+<!-- RESULTADO -->
+<div id="result" class="box"></div>
+
+<script>
+
+/* ================== CONFIG ================== */
+const SHEET_ID =
+  "2PACX-1vQK8r6I6vYuBhlxnU7pBKRkzknIwqLPFoyuF17xWeIhBihhMQ5JOfXdgy65YKn6sZQ-0BdvoS5Nj2S_";
+
+/* HOJA LECTURA DIARIA */
+const SHEET_GID = "2083080359";
+
+/* ================== DÍA ================== */
+function getDia() {
+
+  const dias = [
+    "Domingo",
+    "Lunes",
+    "Martes",
+    "Miercoles",
+    "Jueves",
+    "Viernes",
+    "Sabado"
+  ];
+
+  return dias[new Date().getDay());
+
+}
+
+/* ================== FECHA LIMA ================== */
+function formatearFechaLima() {
+
+  const now = new Date();
+
+  const offset = -5 * 60;
+
+  const local =
+    new Date(now.getTime() + offset * 60000);
+
+  const yyyy = local.getUTCFullYear();
+
+  const mm = String(
+    local.getUTCMonth() + 1
+  ).padStart(2, "0");
+
+  const dd = String(
+    local.getUTCDate()
+  ).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}`;
+
+}
+
+/* ================== SHEETS ================== */
+async function getData() {
+
+  const url =
+    `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?output=tsv`;
+
+  const res = await fetch(url);
+
+  const text = await res.text();
+
+  const lines = text.trim().split("\n");
+
+  return lines.slice(1).map(line => {
+
+    const cols = line.split("\t");
+
+    return {
+      dia: cols[0]?.trim(),
+      tema: cols[1]?.trim(),
+      texto: cols[2]?.trim()
+    };
+
+  });
+
+}
+
+/* ================== LECTURA DIARIA ================== */
+async function getLecturaDiaria() {
+
+  try {
+
+    const url =
+      `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?gid=${SHEET_GID}&single=true&output=tsv`;
+
+    const res = await fetch(url);
+
+    const text = await res.text();
+
+    const lines = text.trim().split("\n");
+
+    const rows = lines.slice(1).map(line => {
+
+      const cols = line.split("\t");
+
+      return {
+        fecha: cols[0]?.trim(),
+        lectura: cols[1]?.trim()
+      };
+
+    });
+
+    const hoy = formatearFechaLima();
+
+    const entrada =
+      rows.find(r => r.fecha === hoy);
+
+    return entrada?.lectura || null;
+
+  } catch (err) {
+
+    console.error(err);
+    return null;
+
+  }
+
+}
+
+/* ================== PARSER ================== */
+function parseTexto(texto) {
+
+  let match =
+    texto.match(/^(.+)\s(\d+)\.(\d+)-(\d+)\.(\d+)$/);
+
+  if (match) {
+
+    return {
+      libro: match[1].toLowerCase(),
+      capInicio: parseInt(match[2]),
+      versInicio: parseInt(match[3]),
+      capFin: parseInt(match[4]),
+      versFin: parseInt(match[5]),
+      type: "range_multi"
+    };
+
+  }
+
+  match =
+    texto.match(/^(.+)\s(\d+)\.(\d+)-(\d+)$/);
+
+  if (match) {
+
+    return {
+      libro: match[1].toLowerCase(),
+      capitulo: parseInt(match[2]),
+      inicio: parseInt(match[3]),
+      fin: parseInt(match[4]),
+      type: "range_single"
+    };
+
+  }
+
+  match =
+    texto.match(/^(.+)\s(\d+)$/);
+
+  if (match) {
+
+    return {
+      libro: match[1].toLowerCase(),
+      capitulo: parseInt(match[2]),
+      type: "chapter"
+    };
+
+  }
+
+  match =
+    texto.match(/^(.+)\s(\d+)\.(\d+)$/);
+
+  if (match) {
+
+    return {
+      libro: match[1].toLowerCase(),
+      capitulo: parseInt(match[2]),
+      versiculo: parseInt(match[3]),
+      type: "single"
+    };
+
+  }
+
+  return null;
+
+}
+
+/* ================== LIBROS ================== */
+const libros = {
+
+  "romanos": "Romanos",
+  "juan": "Juan",
+  "mateo": "Mateo",
+  "marcos": "Marcos",
+  "lucas": "Lucas",
+  "hechos": "Hechos",
+
+  "1 corintios": "1Corintios",
+  "2 corintios": "2Corintios",
+
+  "galatas": "Galatas",
+  "efesios": "Efesios",
+  "filipenses": "Filipenses",
+  "colosenses": "Colosenses",
+
+  "1 pedro": "1Pedro",
+  "2 pedro": "2Pedro",
+
+  "apocalipsis": "Apocalipsis"
+
+};
+
+/* ================== BIBLIA ================== */
+async function getBiblia(libro) {
+
+  const res =
+    await fetch(`data/${libro}.json`);
+
+  return await res.json();
+
+}
+
+/* ================== WHATSAPP ================== */
+function compartirWhatsApp(texto) {
+
+  const url =
+    `https://wa.me/?text=${encodeURIComponent(texto)}`;
+
+  window.open(url, "_blank");
+
+}
+
+/* ================== HTML VERSO ================== */
+function crearVersoHTML(ref, texto) {
+
+  return `
+    <div class="verse">
+      <b>${ref}</b> ${texto}
+    </div>
+  `;
+
+}
+
+/* ================== MAIN ================== */
+async function cargarDevocional() {
+
+  const box =
+    document.getElementById("result");
+
+  const preloader =
+    document.getElementById("preloader");
+
+  preloader.style.display = "flex";
+
+  box.innerHTML = "";
+
+  try {
+
+    const dia = getDia();
+
+    const data = await getData();
+
+    const lecturaDiaria =
+      await getLecturaDiaria();
+
+    const item =
+      data.find(d => d.dia === dia);
+
+    if (!item) {
+
+      box.innerHTML =
+        "❌ No hay devocional";
+
+      return;
+
+    }
+
+    const parsed =
+      parseTexto(item.texto);
+
+    if (!parsed) {
+
+      box.innerHTML =
+        "⚠️ Formato inválido";
+
+      return;
+
+    }
+
+    const libroReal =
+      libros[parsed.libro];
+
+    if (!libroReal) {
+
+      box.innerHTML =
+        "❌ Libro no encontrado";
+
+      return;
+
+    }
+
+    const bible =
+      await getBiblia(libroReal);
+
+    const cap = bible.chapters;
+
+    let textoFinal = "";
+
+    /* ================= HEADER ================= */
+
+    let html = `
+      <div class="verse">
+
+        📅 <b>${item.dia}</b><br><br>
+
+        📚 <b>${item.tema}</b><br><br>
+
+        📖 <b>${item.texto}</b>
+
+        ${
+          lecturaDiaria
+          ? `
+            <br><br>
+            📘 <b>Lectura diaria:</b><br>
+            ${lecturaDiaria}
+          `
+          : ""
+        }
+
+      </div>
+    `;
+
+    /* ================= MULTI ================= */
+    if (parsed.type === "range_multi") {
+
+      for (
+        let c = parsed.capInicio;
+        c <= parsed.capFin;
+        c++
+      ) {
+
+        const chapter = cap[c];
+
+        if (!chapter) continue;
+
+        let vStart =
+          c === parsed.capInicio
+          ? parsed.versInicio
+          : 1;
+
+        let vEnd =
+          c === parsed.capFin
+          ? parsed.versFin
+          : chapter.length - 1;
+
+        for (let i = vStart; i <= vEnd; i++) {
+
+          if (!chapter[i]) continue;
+
+          html += crearVersoHTML(
+            `${c}:${i}`,
+            chapter[i]
+          );
+
+          textoFinal +=
+            `${c}:${i}. ${chapter[i]}\n`;
+
+        }
+
+      }
+
+    }
+
+    /* ================= RANGE ================= */
+    else if (parsed.type === "range_single") {
+
+      const chapter =
+        cap[parsed.capitulo];
+
+      for (
+        let i = parsed.inicio;
+        i <= parsed.fin;
+        i++
+      ) {
+
+        if (!chapter[i]) continue;
+
+        html += crearVersoHTML(
+          `${parsed.capitulo}:${i}`,
+          chapter[i]
+        );
+
+        textoFinal +=
+          `${parsed.capitulo}:${i}. ${chapter[i]}\n`;
+
+      }
+
+    }
+
+    /* ================= CHAPTER ================= */
+    else if (parsed.type === "chapter") {
+
+      const chapter =
+        cap[parsed.capitulo];
+
+      chapter.forEach((v, i) => {
+
+        if (i === 0) return;
+
+        html += crearVersoHTML(
+          `${parsed.capitulo}:${i}`,
+          v
+        );
+
+        textoFinal +=
+          `${parsed.capitulo}:${i}. ${v}\n`;
+
+      });
+
+    }
+
+    /* ================= SINGLE ================= */
+    else if (parsed.type === "single") {
+
+      const v =
+        cap[parsed.capitulo]?.[
+          parsed.versiculo
+        ];
+
+      if (v) {
+
+        html += crearVersoHTML(
+          `${parsed.capitulo}:${parsed.versiculo}`,
+          v
+        );
+
+        textoFinal +=
+          `${parsed.capitulo}:${parsed.versiculo}. ${v}\n`;
+
+      }
+
+    }
+
+    /* ================= MENSAJE WHATSAPP ================= */
+
+    const mensajeWhatsApp = `
+📖 Devocional Diario
+
+📚 Tema:
+${item.tema}
+
+📖 Texto:
+${item.texto}
+
+${
+lecturaDiaria
+? `📘 Lectura diaria:
+${lecturaDiaria}
+
+`
+: ""
+}
+
+${textoFinal}
+`;
+
+    /* ================= BOTON ================= */
+
+    html += `
+      <button onclick="compartirWhatsApp(\`${mensajeWhatsApp}\`)">
+        📤 Compartir WhatsApp
+      </button>
+    `;
+
+    box.innerHTML = html;
+
+  } catch (err) {
+
+    console.error(err);
+
+    box.innerHTML =
+      "⚠️ Error al cargar";
+
+  }
+
+  preloader.style.display = "none";
+
+}
+
+/* ================== AUTOLOAD ================== */
+window.onload = () => {
+
+  cargarDevocional();
+
+};
+
+</script>
 
 </body>
 </html>
