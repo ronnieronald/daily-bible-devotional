@@ -55,6 +55,11 @@ button{
   font-weight:bold;
   width:100%;
   font-size:15px;
+  transition:.3s;
+}
+
+button:hover{
+  opacity:.85;
 }
 
 /* ================= PRELOADER ================= */
@@ -68,6 +73,7 @@ button{
   justify-content:center;
   align-items:center;
   z-index:9999;
+  transition:opacity .3s ease;
 }
 
 .loader{
@@ -127,8 +133,11 @@ button{
 const SHEET_ID =
 "2PACX-1vQK8r6I6vYuBhlxnU7pBKRkzknIwqLPFoyuF17xWeIhBihhMQ5JOfXdgy65YKn6sZQ-0BdvoS5Nj2S_";
 
-/* HOJA LECTURA DIARIA */
+/* LECTURA DIARIA */
 const SHEET_GID = "2083080359";
+
+/* CACHE */
+const bibleCache = {};
 
 /* ================== DÍA ================== */
 
@@ -173,7 +182,7 @@ function formatearFechaLima(){
 
 }
 
-/* ================== SHEETS DEVOCIONAL ================== */
+/* ================== DEVOCIONAL ================== */
 
 async function getData(){
 
@@ -321,16 +330,17 @@ function parseTexto(texto){
 
 }
 
-/* ================== LIBROS ================== */
+/* ================== NUEVO TESTAMENTO ================== */
 
 const libros = {
 
-  "romanos": "Romanos",
-  "juan": "Juan",
   "mateo": "Mateo",
   "marcos": "Marcos",
   "lucas": "Lucas",
+  "juan": "Juan",
   "hechos": "Hechos",
+
+  "romanos": "Romanos",
 
   "1 corintios": "1Corintios",
   "2 corintios": "2Corintios",
@@ -340,8 +350,27 @@ const libros = {
   "filipenses": "Filipenses",
   "colosenses": "Colosenses",
 
+  "1 tesalonicenses": "1Tesalonicenses",
+  "2 tesalonicenses": "2Tesalonicenses",
+
+  "1 timoteo": "1Timoteo",
+  "2 timoteo": "2Timoteo",
+
+  "tito": "Tito",
+  "filemon": "Filemon",
+
+  "hebreos": "Hebreos",
+
+  "santiago": "Santiago",
+
   "1 pedro": "1Pedro",
   "2 pedro": "2Pedro",
+
+  "1 juan": "1Juan",
+  "2 juan": "2Juan",
+  "3 juan": "3Juan",
+
+  "judas": "Judas",
 
   "apocalipsis": "Apocalipsis"
 
@@ -353,9 +382,12 @@ async function getBiblia(libro){
 
   try{
 
-    const path = `data/${libro}.json`;
+    /* CACHE */
+    if(bibleCache[libro]){
+      return bibleCache[libro];
+    }
 
-    console.log("Buscando:", path);
+    const path = `data/${libro}.json`;
 
     const res = await fetch(path);
 
@@ -363,7 +395,11 @@ async function getBiblia(libro){
       throw new Error("JSON no encontrado");
     }
 
-    return await res.json();
+    const data = await res.json();
+
+    bibleCache[libro] = data;
+
+    return data;
 
   }catch(err){
 
@@ -414,12 +450,14 @@ async function cargarDevocional(){
 
   try{
 
+    /* CARGA PARALELA */
+    const [data, lecturaDiaria] =
+      await Promise.all([
+        getData(),
+        getLecturaDiaria()
+      ]);
+
     const dia = getDia();
-
-    const data = await getData();
-
-    const lecturaDiaria =
-      await getLecturaDiaria();
 
     const item =
       data.find(d => d.dia === dia);
@@ -439,8 +477,6 @@ async function cargarDevocional(){
     const parsed =
       parseTexto(item.texto);
 
-    console.log(parsed);
-
     if(!parsed){
 
       box.innerHTML = `
@@ -456,13 +492,12 @@ async function cargarDevocional(){
     const libroReal =
       libros[parsed.libro];
 
-    console.log(libroReal);
-
     if(!libroReal){
 
       box.innerHTML = `
         <div class="verse">
-          ❌ Libro no encontrado
+          ❌ Libro no encontrado:
+          ${parsed.libro}
         </div>
       `;
 
@@ -477,7 +512,8 @@ async function cargarDevocional(){
 
       box.innerHTML = `
         <div class="verse">
-          ❌ No se encontró el JSON del libro
+          ❌ JSON no encontrado:
+          ${libroReal}.json
         </div>
       `;
 
@@ -487,7 +523,7 @@ async function cargarDevocional(){
 
     const cap = bible.chapters;
 
-    let textoFinal = "";
+    let textoFinal = [];
 
     /* ================= HEADER ================= */
 
@@ -546,8 +582,9 @@ async function cargarDevocional(){
             chapter[i]
           );
 
-          textoFinal +=
-            `${c}:${i}. ${chapter[i]}\n`;
+          textoFinal.push(
+            `${c}:${i}. ${chapter[i]}`
+          );
 
         }
 
@@ -577,8 +614,9 @@ async function cargarDevocional(){
             chapter[i]
           );
 
-          textoFinal +=
-            `${parsed.capitulo}:${i}. ${chapter[i]}\n`;
+          textoFinal.push(
+            `${parsed.capitulo}:${i}. ${chapter[i]}`
+          );
 
         }
 
@@ -604,8 +642,9 @@ async function cargarDevocional(){
             v
           );
 
-          textoFinal +=
-            `${parsed.capitulo}:${i}. ${v}\n`;
+          textoFinal.push(
+            `${parsed.capitulo}:${i}. ${v}`
+          );
 
         });
 
@@ -629,14 +668,15 @@ async function cargarDevocional(){
           v
         );
 
-        textoFinal +=
-          `${parsed.capitulo}:${parsed.versiculo}. ${v}\n`;
+        textoFinal.push(
+          `${parsed.capitulo}:${parsed.versiculo}. ${v}`
+        );
 
       }
 
     }
 
-    /* ================= MENSAJE WHATSAPP ================= */
+    /* ================= WHATSAPP ================= */
 
     const mensajeWhatsApp = `
 📖 Devocional Diario
@@ -656,7 +696,7 @@ ${lecturaDiaria}
 : ""
 }
 
-${textoFinal}
+${textoFinal.join("\n")}
 `;
 
     /* ================= BOTON ================= */
@@ -681,7 +721,15 @@ ${textoFinal}
 
   }finally{
 
-    preloader.style.display = "none";
+    setTimeout(() => {
+
+      preloader.style.opacity = "0";
+
+      setTimeout(() => {
+        preloader.style.display = "none";
+      }, 300);
+
+    }, 150);
 
   }
 
