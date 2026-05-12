@@ -123,14 +123,16 @@ button{
 <script>
 
 /* ================== CONFIG ================== */
+
 const SHEET_ID =
-  "2PACX-1vQK8r6I6vYuBhlxnU7pBKRkzknIwqLPFoyuF17xWeIhBihhMQ5JOfXdgy65YKn6sZQ-0BdvoS5Nj2S_";
+"2PACX-1vQK8r6I6vYuBhlxnU7pBKRkzknIwqLPFoyuF17xWeIhBihhMQ5JOfXdgy65YKn6sZQ-0BdvoS5Nj2S_";
 
 /* HOJA LECTURA DIARIA */
 const SHEET_GID = "2083080359";
 
 /* ================== DÍA ================== */
-function getDia() {
+
+function getDia(){
 
   const dias = [
     "Domingo",
@@ -142,12 +144,13 @@ function getDia() {
     "Sabado"
   ];
 
-  return dias[new Date().getDay());
+  return dias[new Date().getDay()];
 
 }
 
 /* ================== FECHA LIMA ================== */
-function formatearFechaLima() {
+
+function formatearFechaLima(){
 
   const now = new Date();
 
@@ -170,13 +173,18 @@ function formatearFechaLima() {
 
 }
 
-/* ================== SHEETS ================== */
-async function getData() {
+/* ================== SHEETS DEVOCIONAL ================== */
+
+async function getData(){
 
   const url =
     `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?output=tsv`;
 
   const res = await fetch(url);
+
+  if(!res.ok){
+    throw new Error("Error Google Sheets");
+  }
 
   const text = await res.text();
 
@@ -197,9 +205,10 @@ async function getData() {
 }
 
 /* ================== LECTURA DIARIA ================== */
-async function getLecturaDiaria() {
 
-  try {
+async function getLecturaDiaria(){
+
+  try{
 
     const url =
       `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?gid=${SHEET_GID}&single=true&output=tsv`;
@@ -228,9 +237,10 @@ async function getLecturaDiaria() {
 
     return entrada?.lectura || null;
 
-  } catch (err) {
+  }catch(err){
 
     console.error(err);
+
     return null;
 
   }
@@ -238,12 +248,18 @@ async function getLecturaDiaria() {
 }
 
 /* ================== PARSER ================== */
-function parseTexto(texto) {
 
+function parseTexto(texto){
+
+  if(!texto) return null;
+
+  texto = texto.trim();
+
+  // Hechos 21.37-22.5
   let match =
     texto.match(/^(.+)\s(\d+)\.(\d+)-(\d+)\.(\d+)$/);
 
-  if (match) {
+  if(match){
 
     return {
       libro: match[1].toLowerCase(),
@@ -256,10 +272,11 @@ function parseTexto(texto) {
 
   }
 
+  // Hechos 21.37-50
   match =
     texto.match(/^(.+)\s(\d+)\.(\d+)-(\d+)$/);
 
-  if (match) {
+  if(match){
 
     return {
       libro: match[1].toLowerCase(),
@@ -271,10 +288,11 @@ function parseTexto(texto) {
 
   }
 
+  // Hechos 21
   match =
     texto.match(/^(.+)\s(\d+)$/);
 
-  if (match) {
+  if(match){
 
     return {
       libro: match[1].toLowerCase(),
@@ -284,10 +302,11 @@ function parseTexto(texto) {
 
   }
 
+  // Juan 3.16
   match =
     texto.match(/^(.+)\s(\d+)\.(\d+)$/);
 
-  if (match) {
+  if(match){
 
     return {
       libro: match[1].toLowerCase(),
@@ -303,6 +322,7 @@ function parseTexto(texto) {
 }
 
 /* ================== LIBROS ================== */
+
 const libros = {
 
   "romanos": "Romanos",
@@ -328,17 +348,36 @@ const libros = {
 };
 
 /* ================== BIBLIA ================== */
-async function getBiblia(libro) {
 
-  const res =
-    await fetch(`data/${libro}.json`);
+async function getBiblia(libro){
 
-  return await res.json();
+  try{
+
+    const path = `data/${libro}.json`;
+
+    console.log("Buscando:", path);
+
+    const res = await fetch(path);
+
+    if(!res.ok){
+      throw new Error("JSON no encontrado");
+    }
+
+    return await res.json();
+
+  }catch(err){
+
+    console.error(err);
+
+    return null;
+
+  }
 
 }
 
 /* ================== WHATSAPP ================== */
-function compartirWhatsApp(texto) {
+
+function compartirWhatsApp(texto){
 
   const url =
     `https://wa.me/?text=${encodeURIComponent(texto)}`;
@@ -348,7 +387,8 @@ function compartirWhatsApp(texto) {
 }
 
 /* ================== HTML VERSO ================== */
-function crearVersoHTML(ref, texto) {
+
+function crearVersoHTML(ref, texto){
 
   return `
     <div class="verse">
@@ -359,7 +399,8 @@ function crearVersoHTML(ref, texto) {
 }
 
 /* ================== MAIN ================== */
-async function cargarDevocional() {
+
+async function cargarDevocional(){
 
   const box =
     document.getElementById("result");
@@ -371,7 +412,7 @@ async function cargarDevocional() {
 
   box.innerHTML = "";
 
-  try {
+  try{
 
     const dia = getDia();
 
@@ -383,10 +424,13 @@ async function cargarDevocional() {
     const item =
       data.find(d => d.dia === dia);
 
-    if (!item) {
+    if(!item){
 
-      box.innerHTML =
-        "❌ No hay devocional";
+      box.innerHTML = `
+        <div class="verse">
+          ❌ No hay devocional para hoy
+        </div>
+      `;
 
       return;
 
@@ -395,10 +439,15 @@ async function cargarDevocional() {
     const parsed =
       parseTexto(item.texto);
 
-    if (!parsed) {
+    console.log(parsed);
 
-      box.innerHTML =
-        "⚠️ Formato inválido";
+    if(!parsed){
+
+      box.innerHTML = `
+        <div class="verse">
+          ⚠️ Formato inválido
+        </div>
+      `;
 
       return;
 
@@ -407,10 +456,15 @@ async function cargarDevocional() {
     const libroReal =
       libros[parsed.libro];
 
-    if (!libroReal) {
+    console.log(libroReal);
 
-      box.innerHTML =
-        "❌ Libro no encontrado";
+    if(!libroReal){
+
+      box.innerHTML = `
+        <div class="verse">
+          ❌ Libro no encontrado
+        </div>
+      `;
 
       return;
 
@@ -418,6 +472,18 @@ async function cargarDevocional() {
 
     const bible =
       await getBiblia(libroReal);
+
+    if(!bible){
+
+      box.innerHTML = `
+        <div class="verse">
+          ❌ No se encontró el JSON del libro
+        </div>
+      `;
+
+      return;
+
+    }
 
     const cap = bible.chapters;
 
@@ -448,17 +514,18 @@ async function cargarDevocional() {
     `;
 
     /* ================= MULTI ================= */
-    if (parsed.type === "range_multi") {
 
-      for (
+    if(parsed.type === "range_multi"){
+
+      for(
         let c = parsed.capInicio;
         c <= parsed.capFin;
         c++
-      ) {
+      ){
 
         const chapter = cap[c];
 
-        if (!chapter) continue;
+        if(!chapter) continue;
 
         let vStart =
           c === parsed.capInicio
@@ -470,9 +537,9 @@ async function cargarDevocional() {
           ? parsed.versFin
           : chapter.length - 1;
 
-        for (let i = vStart; i <= vEnd; i++) {
+        for(let i = vStart; i <= vEnd; i++){
 
-          if (!chapter[i]) continue;
+          if(!chapter[i]) continue;
 
           html += crearVersoHTML(
             `${c}:${i}`,
@@ -489,62 +556,73 @@ async function cargarDevocional() {
     }
 
     /* ================= RANGE ================= */
-    else if (parsed.type === "range_single") {
+
+    else if(parsed.type === "range_single"){
 
       const chapter =
         cap[parsed.capitulo];
 
-      for (
-        let i = parsed.inicio;
-        i <= parsed.fin;
-        i++
-      ) {
+      if(chapter){
 
-        if (!chapter[i]) continue;
+        for(
+          let i = parsed.inicio;
+          i <= parsed.fin;
+          i++
+        ){
 
-        html += crearVersoHTML(
-          `${parsed.capitulo}:${i}`,
-          chapter[i]
-        );
+          if(!chapter[i]) continue;
 
-        textoFinal +=
-          `${parsed.capitulo}:${i}. ${chapter[i]}\n`;
+          html += crearVersoHTML(
+            `${parsed.capitulo}:${i}`,
+            chapter[i]
+          );
+
+          textoFinal +=
+            `${parsed.capitulo}:${i}. ${chapter[i]}\n`;
+
+        }
 
       }
 
     }
 
     /* ================= CHAPTER ================= */
-    else if (parsed.type === "chapter") {
+
+    else if(parsed.type === "chapter"){
 
       const chapter =
         cap[parsed.capitulo];
 
-      chapter.forEach((v, i) => {
+      if(chapter){
 
-        if (i === 0) return;
+        chapter.forEach((v, i) => {
 
-        html += crearVersoHTML(
-          `${parsed.capitulo}:${i}`,
-          v
-        );
+          if(i === 0) return;
 
-        textoFinal +=
-          `${parsed.capitulo}:${i}. ${v}\n`;
+          html += crearVersoHTML(
+            `${parsed.capitulo}:${i}`,
+            v
+          );
 
-      });
+          textoFinal +=
+            `${parsed.capitulo}:${i}. ${v}\n`;
+
+        });
+
+      }
 
     }
 
     /* ================= SINGLE ================= */
-    else if (parsed.type === "single") {
+
+    else if(parsed.type === "single"){
 
       const v =
         cap[parsed.capitulo]?.[
           parsed.versiculo
         ];
 
-      if (v) {
+      if(v){
 
         html += crearVersoHTML(
           `${parsed.capitulo}:${parsed.versiculo}`,
@@ -591,20 +669,26 @@ ${textoFinal}
 
     box.innerHTML = html;
 
-  } catch (err) {
+  }catch(err){
 
     console.error(err);
 
-    box.innerHTML =
-      "⚠️ Error al cargar";
+    box.innerHTML = `
+      <div class="verse">
+        ⚠️ Error al cargar datos
+      </div>
+    `;
+
+  }finally{
+
+    preloader.style.display = "none";
 
   }
-
-  preloader.style.display = "none";
 
 }
 
 /* ================== AUTOLOAD ================== */
+
 window.onload = () => {
 
   cargarDevocional();
