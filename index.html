@@ -530,17 +530,16 @@ async function cargarDevocional(){
     let html = `
       <div class="verse">
 
-        📅 <b>${item.dia}</b><br><br>
+        📅 <b>${item.dia}</b>
 
-        📚 <b>${item.tema}</b><br><br>
+        📚 <b>${item.tema}</b>
 
         📖 <b>${item.texto}</b>
 
         ${
           lecturaDiaria
           ? `
-            <br><br>
-            📘 <b>Lectura diaria:</b><br>
+            📘 <b>Lectura diaria:</b>
             ${lecturaDiaria}
           `
           : ""
@@ -680,13 +679,10 @@ async function cargarDevocional(){
 
     const mensajeWhatsApp = `
 📖 Devocional Diario
-
 📚 Tema:
 ${item.tema}
-
 📖 Texto:
 ${item.texto}
-
 ${
 lecturaDiaria
 ? `📘 Lectura diaria:
