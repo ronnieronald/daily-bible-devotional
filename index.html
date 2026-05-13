@@ -678,12 +678,10 @@ async function cargarDevocional(){
     /* ================= WHATSAPP ================= */
 
     const mensajeWhatsApp = `
-📖 Devocional Diario
-📖 Texto:
+📖 Devocional Diario:
 ${item.texto}
-${
-lecturaDiaria
-? `📘 Lectura diaria:
+${lecturaDiaria?
+`📘 Lectura diaria:
 ${lecturaDiaria}
 `
 : ""
